@@ -69,39 +69,15 @@ deactivate your virtual environment if it's active:
 
     sudo tee /etc/systemd/system/service-monitor.service > /dev/null << 'EOF'
     [Unit]
-    Description=Service Monitor (Production)
+    Description=Service Monitor
     After=network.target
 
     [Service]
-    Type=notify
+    Type=simple
     User=azureuser
     WorkingDirectory=/home/azureuser/cn-monitoring
-    Environment="PATH=/home/azureuser/cn-monitoring/myvenv/bin:/usr/local/bin:/usr/bin:/bin"
-
-    ExecStart=/home/azureuser/cn-monitoring/myvenv/bin/gunicorn \
-        --bind 0.0.0.0:8888 \
-        --workers 4 \
-        --threads 2 \
-        --worker-class gthread \
-        --timeout 120 \
-        --access-logfile /var/log/service-monitor/access.log \
-        --error-logfile /var/log/service-monitor/error.log \
-        --log-level info \
-        --preload \
-        service_monitor:app
-
+    ExecStart=/home/azureuser/cn-monitoring/myvenv/bin/python3 monitor.py
     Restart=always
-    RestartSec=10
-    StandardOutput=journal
-    StandardError=journal
-
-    # Security
-    NoNewPrivileges=true
-    PrivateTmp=true
-
-    # Resource limits
-    MemoryMax=512M
-    CPUQuota=100%
 
     [Install]
     WantedBy=multi-user.target
