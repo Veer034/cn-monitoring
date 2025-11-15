@@ -37,7 +37,7 @@ Install library in local VM
 
 Start in local
 
-    python3.10 monitoring.py
+    python3.10 service_monitor.py
 
 deactivate your virtual environment if it's active:
 
@@ -69,15 +69,16 @@ deactivate your virtual environment if it's active:
 
     sudo tee /etc/systemd/system/service-monitor.service > /dev/null << 'EOF'
     [Unit]
-    Description=Service Monitor
+    Description=Service Monitor (Production)
     After=network.target
 
     [Service]
     Type=notify
     User=azureuser
-    WorkingDirectory=/home/azureuser
-    Environment="PATH=/usr/local/bin:/usr/bin:/bin"
-    ExecStart=/usr/local/bin/gunicorn \
+    WorkingDirectory=/home/azureuser/cn-monitoring
+    Environment="PATH=/home/azureuser/cn-monitoring/myvenv/bin:/usr/local/bin:/usr/bin:/bin"
+
+    ExecStart=/home/azureuser/cn-monitoring/myvenv/bin/gunicorn \
         --bind 0.0.0.0:8888 \
         --workers 4 \
         --threads 2 \
@@ -105,10 +106,6 @@ deactivate your virtual environment if it's active:
     [Install]
     WantedBy=multi-user.target
     EOF
-
-### HuggingFace model storage location
-
-    ~/.cache/huggingface/
 
 ### List all services
 
