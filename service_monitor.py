@@ -459,10 +459,16 @@ if __name__ == '__main__':
     monitor_thread = Thread(target=monitoring_loop, daemon=True, name="MonitorThread")
     monitor_thread.start()
     
-    logger.info("🌐 Web interface: http://localhost:8888")
+    logger.info("🌐 Starting production server...")
     logger.info("📊 Metrics: http://localhost:8888/prometheus")
     logger.info("📋 Status: http://localhost:8888/status")
     logger.info("=" * 60)
     
-    # Start Flask server
-    app.run(host='0.0.0.0', port=8888, debug=False, threaded=True)
+    # Gunicorn will handle the app object
+    # When run directly for testing, use development server
+    try:
+        import sys
+        if 'gunicorn' not in sys.argv[0]:
+            app.run(host='0.0.0.0', port=8888, debug=False)
+    except:
+        pass

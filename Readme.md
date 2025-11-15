@@ -33,7 +33,7 @@ Activiate Env
 
 Install library in local VM
 
-    pip install flask psutil requests
+    pip install flask psutil requests gunicorn
 
 Start in local
 
@@ -53,7 +53,7 @@ deactivate your virtual environment if it's active:
 
     sudo apt update
     sudo apt install git -y
-    git clone https://github.com/Veer034/cn-monitorting.git
+    git clone https://github.com/Veer034/service-monitor.git
 
 ### Install Python
 
@@ -63,11 +63,7 @@ deactivate your virtual environment if it's active:
 
 ### Install library in production VM
 
-    pip install flask psutil requests python-dateutil prometheus-client
-
-    # Ensure pip build tools are up to date
-    pip install --upgrade pip setuptools wheel
-    pip install --upgrade build
+    pip install flask psutil requests gunicorn
 
 ### Create Systemd file for as a service execution
 
@@ -77,23 +73,38 @@ deactivate your virtual environment if it's active:
     After=network.target
 
     [Service]
-    Type=simple
+    Type=notify
     User=azureuser
     WorkingDirectory=/home/azureuser
-    ExecStart=/usr/bin/python3 /home/azureuser/service_monitor.py
+    Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+    ExecStart=/usr/local/bin/gunicorn \
+        --bind 0.0.0.0:8888 \
+        --workers 4 \
+        --threads 2 \
+        --worker-class gthread \
+        --timeout 120 \
+        --access-logfile /var/log/service-monitor/access.log \
+        --error-logfile /var/log/service-monitor/error.log \
+        --log-level info \
+        --preload \
+        service_monitor:app
+
     Restart=always
     RestartSec=10
     StandardOutput=journal
     StandardError=journal
 
+    # Security
+    NoNewPrivileges=true
+    PrivateTmp=true
+
+    # Resource limits
+    MemoryMax=512M
+    CPUQuota=100%
+
     [Install]
     WantedBy=multi-user.target
     EOF
-
-    sudo systemctl daemon-reload
-    sudo systemctl enable service-monitor
-    sudo systemctl start service-monitor
-    sudo systemctl status service-monitor
 
 ### HuggingFace model storage location
 
@@ -110,44 +121,44 @@ deactivate your virtual environment if it's active:
 
 ### Enable all services to start on boot
 
-    sudo systemctl enable cn-monitorting
+    sudo systemctl enable service-monitor
 
 ### Start Service
 
-    sudo systemctl start cn-monitorting
+    sudo systemctl start service-monitor
 
 ### Check Status
 
-    sudo systemctl status cn-monitorting
+    sudo systemctl status service-monitor
 
 ### Stop service
 
-    sudo systemctl stop cn-monitorting
+    sudo systemctl stop service-monitor
 
 ### Restart service
 
-    sudo systemctl restart cn-monitorting
+    sudo systemctl restart service-monitor
 
 ### Check logs for specific service
 
-    sudo journalctl -u cn-monitorting -f
+    sudo journalctl -u service-monitor -f
 
 ### Check service generated logs
 
-    tail -n 50 ~/cn-monitorting/logs/server.log
+    tail -n 50 ~/service-monitor/logs/server.log
 
 ### Check logs for that service
 
-    journalctl -u cn-monitorting.service
+    journalctl -u service-monitor.service
 
 ### Rotate the journal for that service (so old logs can be vacuumed)
 
-    sudo journalctl --unit=cn-monitorting.service --rotate
+    sudo journalctl --unit=service-monitor.service --rotate
 
 ### Delete old logs for that service
 
-    sudo journalctl --unit=cn-monitorting.service --vacuum-time=1s
+    sudo journalctl --unit=service-monitor.service --vacuum-time=1s
 
 
     # Or to keep only the last 7 days:
-    sudo journalctl --unit=cn-monitorting.service --vacuum-time=7d
+    sudo journalctl --unit=service-monitor.service --vacuum-time=7d
